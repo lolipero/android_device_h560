@@ -1,0 +1,525 @@
+diff --git a/core/java/android/os/BatteryProperties.java b/core/java/android/os/BatteryProperties.java
+index 76568df..3167a7b 100644
+--- a/core/java/android/os/BatteryProperties.java
++++ b/core/java/android/os/BatteryProperties.java
+@@ -41,19 +41,6 @@ public class BatteryProperties implements Parcelable {
+     public int dockBatteryTemperature;
+     public String dockBatteryTechnology;
+ 
+-    // MTK
+-    private static final boolean MTK_HEALTHD;
+-
+-    static {
+-        // XXX: Magnificent hack relying on 3rd-party ROMs not including the
+-        // (useless anyway) MTK-specific init scripts. Doing a string search
+-        // on the healthd binary for some MTK-specific strings may be more
+-        // reliable, but it's arguably more overhead.
+-        MTK_HEALTHD = new java.io.File("/factory_init.rc").exists()
+-                      || new java.io.File("/meta_init.rc").exists()
+-                      || new java.io.File("/_have_mtk_healthd").exists();
+-    }
+-
+     public BatteryProperties() {
+     }
+ 
+@@ -90,26 +77,14 @@ public class BatteryProperties implements Parcelable {
+         chargerUsbOnline = p.readInt() == 1 ? true : false;
+         chargerWirelessOnline = p.readInt() == 1 ? true : false;
+         batteryStatus = p.readInt();
+-        if (MTK_HEALTHD)
+-        /* batteryStatus_smb = */ p.readInt();
+         batteryHealth = p.readInt();
+         batteryPresent = p.readInt() == 1 ? true : false;
+-        if (MTK_HEALTHD)
+-        /* batteryPresent_smb = */ p.readInt() /* == 1 ? true : false */;
+         batteryLevel = p.readInt();
+-        if (MTK_HEALTHD)
+-        /* batteryLevel_smb = */ p.readInt();
+         batteryVoltage = p.readInt();
+-        if (MTK_HEALTHD) {
+-        /* batteryCurrentNow = */ p.readInt();
+-        /* batteryChargeCounter = */ p.readInt();
+-        }
+         batteryTemperature = p.readInt();
+-        if (MTK_HEALTHD)
+-        /* adjustPower = */ p.readInt();
+         batteryTechnology = p.readString();
+ 
+-        dockBatterySupported = MTK_HEALTHD ? false : p.readInt() == 1 ? true : false;
++        dockBatterySupported = p.readInt() == 1 ? true : false;
+         if (dockBatterySupported) {
+             chargerDockAcOnline = p.readInt() == 1 ? true : false;
+             dockBatteryStatus = p.readInt();
+@@ -136,29 +111,13 @@ public class BatteryProperties implements Parcelable {
+         p.writeInt(chargerUsbOnline ? 1 : 0);
+         p.writeInt(chargerWirelessOnline ? 1 : 0);
+         p.writeInt(batteryStatus);
+-        if (MTK_HEALTHD)
+-            p.writeInt(0);  // batteryStatus_smb
+         p.writeInt(batteryHealth);
+         p.writeInt(batteryPresent ? 1 : 0);
+-        if (MTK_HEALTHD)
+-            p.writeInt(0);  // batteryPresent_smb
+         p.writeInt(batteryLevel);
+-        if (MTK_HEALTHD)
+-            p.writeInt(50);  // batteryLevel_smb
+         p.writeInt(batteryVoltage);
+-        if (MTK_HEALTHD) {
+-            p.writeInt(0);  // batteryCurrentNow
+-            p.writeInt(0);  // batteryChargeCounter
+-        }
+         p.writeInt(batteryTemperature);
+-        if (MTK_HEALTHD)
+-            p.writeInt(0);  // adjustPower
+         p.writeString(batteryTechnology);
+ 
+-        if (MTK_HEALTHD) {
+-            return;
+-        }
+-
+         p.writeInt(dockBatterySupported ? 1 : 0);
+         if (dockBatterySupported) {
+             p.writeInt(chargerDockAcOnline ? 1 : 0);
+diff --git a/core/java/android/provider/Settings.java b/core/java/android/provider/Settings.java
+index 843dc61..d6327e0 100644
+--- a/core/java/android/provider/Settings.java
++++ b/core/java/android/provider/Settings.java
+@@ -3390,6 +3390,11 @@ public final class Settings {
+         public static final String INCREASING_RING_RAMP_UP_TIME = "increasing_ring_ramp_up_time";
+ 
+         /**
++         * @hide
++         */
++        public static final String SHOW_SU_ICON = "show_su_icon";
++
++        /**
+          * I am the lolrus.
+          * <p>
+          * Nonzero values indicate that the user has a bukkit.
+@@ -5786,6 +5791,36 @@ public final class Settings {
+                 RING_HOME_BUTTON_BEHAVIOR_DO_NOTHING;
+ 
+         /**
++         * What happens when the user presses the Volume button when the
++         * phone is ringing.<br/>
++         * <b>Values:</b><br/>
++         * 1 - Nothing happens. (Default behavior)<br/>
++         * 2 - The Volume button answer the current call.<br/>
++         * 
++         * @hide
++         */
++        public static final String RING_VOLUME_BUTTON_BEHAVIOR = "ring_volume_button_behavior";
++         
++        /**
++         * RING_VOLUME_BUTTON_BEHAVIOR value for "do nothing".
++         * @hide
++         */
++        public static final int RING_VOLUME_BUTTON_BEHAVIOR_DO_NOTHING = 0x1;
++
++        /**
++         * RING_VOLUME_BUTTON_BEHAVIOR value for "answer".
++         * @hide
++         */
++        public static final int RING_VOLUME_BUTTON_BEHAVIOR_ANSWER = 0x2;
++
++        /**
++         * RING_VOLUME_BUTTON_BEHAVIOR default value.
++         * @hide
++         */
++        public static final int RING_VOLUME_BUTTON_BEHAVIOR_DEFAULT =
++                RING_VOLUME_BUTTON_BEHAVIOR_DO_NOTHING;
++
++        /**
+          * The current night mode that has been selected by the user.  Owned
+          * and controlled by UiModeManagerService.  Constants are as per
+          * UiModeManager.
+diff --git a/core/jni/android_media_AudioSystem.cpp b/core/jni/android_media_AudioSystem.cpp
+index fee1ead..5626a15 100644
+--- a/core/jni/android_media_AudioSystem.cpp
++++ b/core/jni/android_media_AudioSystem.cpp
+@@ -1480,7 +1480,43 @@ exit:
+     return jStatus;
+ }
+ 
++static jint
++android_media_AudioSystem_setAudioData(JNIEnv *env, jobject clazz,
++                                       jint jA, jint jB, jbyteArray jArray)
++{
++    ALOGV("setAudioData");
++    if (jArray == NULL || env->GetArrayLength(jArray) == 0) {
++        ALOGE("setAudioData: emply buffer");
++        return (jint)AUDIO_JAVA_BAD_VALUE;
++    }
++
++    jbyte * buffer = env->GetByteArrayElements(jArray, NULL);
++
++    int status = AudioSystem::setAudioData((int)jA, (unsigned long)jB, (char*)buffer);
++
++    env->ReleaseByteArrayElements(jArray, buffer, 0);
++    ALOGV("setAudioData: status %d", status);
++    return (jint)status;
++}
+ 
++static jint
++android_media_AudioSystem_getAudioData(JNIEnv *env, jobject clazz,
++                                       jint jA, jint jB, jbyteArray jArray)
++{
++    ALOGV("getAudioData");
++    if (jArray == NULL || env->GetArrayLength(jArray) == 0) {
++        ALOGE("getAudioData: emply buffer");
++        return (jint)AUDIO_JAVA_BAD_VALUE;
++    }
++
++    jbyte * buffer = env->GetByteArrayElements(jArray, NULL);
++
++    int status = AudioSystem::getAudioData((int)jA, (unsigned long)jB, (char*)buffer);
++
++    env->ReleaseByteArrayElements(jArray, buffer, 0);
++    ALOGV("getAudioData: status %d", status);
++    return (jint)status;
++}
+ 
+ // ----------------------------------------------------------------------------
+ 
+@@ -1525,6 +1561,10 @@ static JNINativeMethod gMethods[] = {
+                                     (void *)android_media_AudioSystem_getAudioHwSyncForSession},
+     {"registerPolicyMixes",    "(Ljava/util/ArrayList;Z)I",
+                                             (void *)android_media_AudioSystem_registerPolicyMixes},
++    {"getAudioData",    "(II[B)I",
++                        (void *)android_media_AudioSystem_getAudioData},
++    {"setAudioData",    "(II[B)I",
++                        (void *)android_media_AudioSystem_setAudioData},
+ 
+ };
+ 
+diff --git a/core/res/res/values/config.xml b/core/res/res/values/config.xml
+index 6ec1c9e..739424d 100755
+--- a/core/res/res/values/config.xml
++++ b/core/res/res/values/config.xml
+@@ -48,6 +48,7 @@
+        <item><xliff:g id="id">alarm_clock</xliff:g></item>
+        <item><xliff:g id="id">secure</xliff:g></item>
+        <item><xliff:g id="id">clock</xliff:g></item>
++       <item><xliff:g id="id">headset</xliff:g></item>
+     </string-array>
+ 
+     <!-- Flag indicating whether the surface flinger has limited
+diff --git a/data/keyboards/Generic.kl b/data/keyboards/Generic.kl
+index f10ba96..bf4e759 100644
+--- a/data/keyboards/Generic.kl
++++ b/data/keyboards/Generic.kl
+@@ -158,7 +158,7 @@ key 128   MEDIA_STOP
+ # key 136 "KEY_FIND"
+ # key 137 "KEY_CUT"
+ # key 138 "KEY_HELP"
+-key 139   MENU
++key 139   MENU	VIRTUAL
+ key 140   CALCULATOR
+ # key 141 "KEY_SETUP"
+ key 142   SLEEP
+@@ -177,7 +177,7 @@ key 152   POWER
+ key 155   ENVELOPE
+ key 156   BOOKMARK
+ # key 157 "KEY_COMPUTER"
+-key 158   BACK
++key 158   BACK	VIRTUAL
+ key 159   FORWARD
+ key 160   MEDIA_CLOSE
+ key 161   MEDIA_EJECT
+@@ -191,7 +191,7 @@ key 168   MEDIA_REWIND
+ key 169   CALL
+ # key 170 "KEY_ISO"
+ key 171   MUSIC
+-key 172   HOME
++key 172   HOME	VIRTUAL
+ # key 173 "KEY_REFRESH"
+ # key 174 "KEY_EXIT"
+ # key 175 "KEY_MOVE"
+diff --git a/media/java/android/media/AudioService.java b/media/java/android/media/AudioService.java
+index 41dc270..6076bc7 100644
+--- a/media/java/android/media/AudioService.java
++++ b/media/java/android/media/AudioService.java
+@@ -274,14 +274,14 @@ public class AudioService extends IAudioService.Stub {
+ 
+    /** @hide Maximum volume index values for audio streams */
+     private static int[] MAX_STREAM_VOLUME = new int[] {
+-        5,  // STREAM_VOICE_CALL
+-        7,  // STREAM_SYSTEM
+-        7,  // STREAM_RING
++        15, // STREAM_VOICE_CALL
++        15, // STREAM_SYSTEM
++        15, // STREAM_RING
+         15, // STREAM_MUSIC
+-        7,  // STREAM_ALARM
+-        7,  // STREAM_NOTIFICATION
++        15, // STREAM_ALARM
++        15, // STREAM_NOTIFICATION
+         15, // STREAM_BLUETOOTH_SCO
+-        7,  // STREAM_SYSTEM_ENFORCED
++        15, // STREAM_SYSTEM_ENFORCED
+         15, // STREAM_DTMF
+         15  // STREAM_TTS
+     };
+diff --git a/media/java/android/media/AudioSystem.java b/media/java/android/media/AudioSystem.java
+index bf79e9a..50b94ae 100644
+--- a/media/java/android/media/AudioSystem.java
++++ b/media/java/android/media/AudioSystem.java
+@@ -604,5 +604,8 @@ public class AudioSystem
+     public static native int getAudioHwSyncForSession(int sessionId);
+ 
+     public static native int registerPolicyMixes(ArrayList<AudioMix> mixes, boolean register);
++
++    public static native int getAudioData(int par, int size, byte[] data);
++    public static native int setAudioData(int par, int size, byte[] data);
+ }
+ 
+diff --git a/media/java/android/media/MediaRecorder.java b/media/java/android/media/MediaRecorder.java
+index aafa07b..bea2ce8 100644
+--- a/media/java/android/media/MediaRecorder.java
++++ b/media/java/android/media/MediaRecorder.java
+@@ -235,6 +235,11 @@ public class MediaRecorder
+         public static final int FM_TUNER = 1998;
+ 
+         /**
++         * {@hide}
++         */
++        public static final int FM = 99;
++
++        /**
+          * Audio source for preemptible, low-priority software hotword detection
+          * It presents the same gain and pre processing tuning as {@link #VOICE_RECOGNITION}.
+          * <p>
+diff --git a/packages/DocumentsUI/res/values-ru/strings.xml b/packages/DocumentsUI/res/values-ru/strings.xml
+index 10de6f0..0044ba0 100644
+--- a/packages/DocumentsUI/res/values-ru/strings.xml
++++ b/packages/DocumentsUI/res/values-ru/strings.xml
+@@ -14,8 +14,7 @@
+      limitations under the License.
+  -->
+ 
+-<resources xmlns:android="http://schemas.android.com/apk/res/android"
+-    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
++<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+     <string name="app_label" msgid="2783841764617238354">"Документы"</string>
+     <string name="title_open" msgid="4353228937663917801">"Открыть"</string>
+     <string name="title_save" msgid="2433679664882857999">"Сохранить"</string>
+diff --git a/packages/SystemUI/src/com/android/systemui/keyguard/KeyguardViewMediator.java b/packages/SystemUI/src/com/android/systemui/keyguard/KeyguardViewMediator.java
+index 352bfba..c45ea43 100755
+--- a/packages/SystemUI/src/com/android/systemui/keyguard/KeyguardViewMediator.java
++++ b/packages/SystemUI/src/com/android/systemui/keyguard/KeyguardViewMediator.java
+@@ -982,6 +982,7 @@ public class KeyguardViewMediator extends SystemUI {
+                    || (why == WindowManagerPolicy.OFF_BECAUSE_OF_USER && !lockImmediately)) {
+                 doKeyguardLaterLocked();
+             } else {
++                SystemClock.sleep(1000);
+                 doKeyguardLocked(null);
+             }
+         }
+@@ -1021,6 +1022,7 @@ public class KeyguardViewMediator extends SystemUI {
+         if (timeout <= 0) {
+             // Lock now
+             mSuppressNextLockSound = true;
++            SystemClock.sleep(1000);
+             doKeyguardLocked(null);
+         } else {
+             // Lock in the future
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/PhoneStatusBarPolicy.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/PhoneStatusBarPolicy.java
+index cd1a3d9..d951892 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/PhoneStatusBarPolicy.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/PhoneStatusBarPolicy.java
+@@ -94,6 +94,7 @@ public class PhoneStatusBarPolicy {
+     private final CastController mCast;
+     private final SuController mSuController;
+     private boolean mAlarmIconVisible;
++    private boolean mSuIconVisible;
+     private final HotspotController mHotspot;
+ 
+     // Assume it's all good unless we hear otherwise.  We don't always seem
+@@ -134,6 +135,9 @@ public class PhoneStatusBarPolicy {
+             else if (action.equals(Intent.ACTION_USER_SWITCHED)) {
+                 updateAlarm();
+             }
++            else if (action.equals(Intent.ACTION_HEADSET_PLUG)) {
++                updateHeadset(intent);
++            }
+         }
+     };
+ 
+@@ -170,6 +174,7 @@ public class PhoneStatusBarPolicy {
+         filter.addAction(TelephonyIntents.ACTION_SIM_STATE_CHANGED);
+         filter.addAction(TelecomManager.ACTION_CURRENT_TTY_MODE_CHANGED);
+         filter.addAction(Intent.ACTION_USER_SWITCHED);
++        filter.addAction(Intent.ACTION_HEADSET_PLUG);
+         mContext.registerReceiver(mIntentReceiver, filter, null, mHandler);
+ 
+         int numPhones = TelephonyManager.getDefault().getPhoneCount();
+@@ -229,10 +234,13 @@ public class PhoneStatusBarPolicy {
+         mService.setIconVisibility(SLOT_SU, false);
+         mSuController.addCallback(mSuCallback);
+ 
+-        mAlarmIconObserver.onChange(true);
++        mIconObserver.onChange(true);
+         mContext.getContentResolver().registerContentObserver(
+                 Settings.System.getUriFor(Settings.System.SHOW_ALARM_ICON),
+-                false, mAlarmIconObserver);
++                false, mIconObserver);
++        mContext.getContentResolver().registerContentObserver(
++                Settings.System.getUriFor(Settings.System.SHOW_SU_ICON),
++                false, mIconObserver);
+ 
+         // hotspot
+         mService.setIcon(SLOT_HOTSPOT, R.drawable.stat_sys_hotspot, 0, null);
+@@ -242,12 +250,15 @@ public class PhoneStatusBarPolicy {
+         QSUtils.registerObserverForQSChanges(mContext, mQSListener);
+     }
+ 
+-    private ContentObserver mAlarmIconObserver = new ContentObserver(null) {
++    private ContentObserver mIconObserver = new ContentObserver(null) {
+         @Override
+         public void onChange(boolean selfChange, Uri uri) {
+             mAlarmIconVisible = Settings.System.getInt(mContext.getContentResolver(),
+                     Settings.System.SHOW_ALARM_ICON, 1) == 1;
++            mSuIconVisible = Settings.System.getInt(mContext.getContentResolver(),
++                    Settings.System.SHOW_SU_ICON, 1) == 1;
+             updateAlarm();
++            updateSu();
+         }
+ 
+         @Override
+@@ -455,7 +466,7 @@ public class PhoneStatusBarPolicy {
+     };
+ 
+     private void updateSu() {
+-        mService.setIconVisibility(SLOT_SU, mSuController.hasActiveSessions());
++        mService.setIconVisibility(SLOT_SU, mSuIconVisible && mSuController.hasActiveSessions());
+         if (mSuController.hasActiveSessions()) {
+             publishSuCustomTile();
+         } else {
+@@ -565,4 +576,26 @@ public class PhoneStatusBarPolicy {
+             unpublishSuCustomTile();
+         }
+     }
++
++    private final void updateHeadset(Intent intent) {
++        final String action = intent.getAction();
++        final int state = intent.getIntExtra("state", 4);
++        final int mic = intent.getIntExtra("microphone", 4);
++
++        switch (state) {
++            case 0:
++                try {
++                    mService.setIconVisibility("headset", false);
++                } catch (Exception e) {
++                }
++			    break;
++            case 1:
++                if (mic == 1)
++                    mService.setIcon("headset", R.drawable.stat_sys_headset_with_mic, 0, null);
++                else
++                    mService.setIcon("headset", R.drawable.stat_sys_headset_without_mic, 0, null);
++                mService.setIconVisibility("headset", true);
++			    break;
++        }
++    }
+ }
+diff --git a/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java b/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
+index 1ef905f..7a53b3f 100644
+--- a/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
++++ b/policy/src/com/android/internal/policy/impl/PhoneWindowManager.java
+@@ -613,6 +613,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+     // (See Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR.)
+     int mIncallPowerBehavior;
+ 
++    // Behavior of VOLUME button during incoming call ring.
++    // (See Settings.Secure.RING_VOLUME_BUTTON_BEHAVIOR.)
++    int mRingVolumeBehavior;
++
+     // Behavior of HOME button during incomming call ring.
+     // (See Settings.Secure.RING_HOME_BUTTON_BEHAVIOR.)
+     int mRingHomeBehavior;
+@@ -800,6 +804,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+                     Settings.Secure.RING_HOME_BUTTON_BEHAVIOR), false, this,
+                     UserHandle.USER_ALL);
+             resolver.registerContentObserver(Settings.Secure.getUriFor(
++                    Settings.Secure.RING_VOLUME_BUTTON_BEHAVIOR), false, this,
++                    UserHandle.USER_ALL);
++            resolver.registerContentObserver(Settings.Secure.getUriFor(
+                     Settings.Secure.WAKE_GESTURE_ENABLED), false, this,
+                     UserHandle.USER_ALL);
+             resolver.registerContentObserver(Settings.System.getUriFor(
+@@ -1980,6 +1987,10 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+                     Settings.Secure.RING_HOME_BUTTON_BEHAVIOR,
+                     Settings.Secure.RING_HOME_BUTTON_BEHAVIOR_DEFAULT,
+                     UserHandle.USER_CURRENT);
++            mRingVolumeBehavior = Settings.Secure.getIntForUser(resolver,
++                    Settings.Secure.RING_VOLUME_BUTTON_BEHAVIOR,
++                    Settings.Secure.RING_VOLUME_BUTTON_BEHAVIOR_DEFAULT,
++                    UserHandle.USER_CURRENT);
+             mHomeWakeScreen = (Settings.System.getIntForUser(resolver,
+                     Settings.System.HOME_WAKE_SCREEN, 1, UserHandle.USER_CURRENT) == 1) &&
+                     ((mDeviceHardwareWakeKeys & KEY_MASK_HOME) != 0);
+@@ -5389,7 +5400,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+         if (isValidGlobalKey(keyCode)
+                 && mGlobalKeyManager.shouldHandleGlobalKey(keyCode, event)) {
+             if (isWakeKey) {
+-                wakeUp(event.getEventTime(), mAllowTheaterModeWakeFromKey, true);
++                wakeUp(event.getEventTime(), mAllowTheaterModeWakeFromKey);
+             }
+             return result;
+         }
+@@ -5460,6 +5471,11 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+                     TelecomManager telecomManager = getTelecommService();
+                     if (telecomManager != null) {
+                         if (telecomManager.isRinging()) {
++                            // The volume key answer
++                            if ((mRingVolumeBehavior
++                                                                & Settings.Secure.RING_VOLUME_BUTTON_BEHAVIOR_ANSWER) != 0) {
++                                telecomManager.acceptRingingCall();
++                            }
+                             // If an incoming call is ringing, either VOLUME key means
+                             // "silence ringer".  We handle these keys here, rather than
+                             // in the InCallScreen, to make sure we'll respond to them
+@@ -5720,12 +5736,13 @@ public class PhoneWindowManager implements WindowManagerPolicy {
+             }
+         }
+ 
+-        if (useHapticFeedback) {
++        if (useHapticFeedback && mDisplay != null
++                && mDisplay.getState() != Display.STATE_OFF) {
+             performHapticFeedbackLw(null, HapticFeedbackConstants.VIRTUAL_KEY, false);
+         }
+ 
+         if (isWakeKey) {
+-            wakeUp(event.getEventTime(), mAllowTheaterModeWakeFromKey, true);
++            wakeUp(event.getEventTime(), mAllowTheaterModeWakeFromKey);
+         }
+ 
+         return result;
+diff --git a/services/core/java/com/android/server/BatteryService.java b/services/core/java/com/android/server/BatteryService.java
+index 32c828c..5657bfa 100644
+--- a/services/core/java/com/android/server/BatteryService.java
++++ b/services/core/java/com/android/server/BatteryService.java
+@@ -986,7 +986,7 @@ public final class BatteryService extends SystemService {
+                     || status == BatteryManager.BATTERY_STATUS_FULL) {
+                 mBatteryLight.setModes(mNotificationLedBrightnessLevel,
+                         mMultipleLedsEnabled);
+-                if (status == BatteryManager.BATTERY_STATUS_FULL || level >= 90) {
++                if (status == BatteryManager.BATTERY_STATUS_FULL || level >= 100) {
+                     // Battery is full or charging and nearly full
+                     mBatteryLight.setColor(mBatteryFullARGB);
+                 } else {
+diff --git a/services/core/java/com/android/server/lights/LightsManager.java b/services/core/java/com/android/server/lights/LightsManager.java
+index e1e5aa3..434fff5 100644
+--- a/services/core/java/com/android/server/lights/LightsManager.java
++++ b/services/core/java/com/android/server/lights/LightsManager.java
+@@ -20,8 +20,8 @@ public abstract class LightsManager {
+     public static final int LIGHT_ID_BACKLIGHT = 0;
+     public static final int LIGHT_ID_KEYBOARD = 1;
+     public static final int LIGHT_ID_BUTTONS = 2;
+-    public static final int LIGHT_ID_BATTERY = 3;
+-    public static final int LIGHT_ID_NOTIFICATIONS = 4;
++    public static final int LIGHT_ID_NOTIFICATIONS = 3;
++    public static final int LIGHT_ID_BATTERY = 4;
+     public static final int LIGHT_ID_ATTENTION = 5;
+     public static final int LIGHT_ID_BLUETOOTH = 6;
+     public static final int LIGHT_ID_WIFI = 7;

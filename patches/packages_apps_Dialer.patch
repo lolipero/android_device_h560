@@ -1,0 +1,76 @@
+diff --git a/res/layout/call_detail.xml b/res/layout/call_detail.xml
+index 35c41c0..4489442 100644
+--- a/res/layout/call_detail.xml
++++ b/res/layout/call_detail.xml
+@@ -64,7 +64,7 @@
+                     android:textSize="@dimen/call_log_primary_text_size"
+                     android:includeFontPadding="false"
+                     android:layout_marginBottom="5dp"
+-                    android:singleLine="true"
++                    android:singleLine="false"
+                     />
+                 <TextView
+                     android:id="@+id/caller_number"
+diff --git a/res/layout/call_log_list_item.xml b/res/layout/call_log_list_item.xml
+index db59b74..49eacef 100644
+--- a/res/layout/call_log_list_item.xml
++++ b/res/layout/call_log_list_item.xml
+@@ -85,7 +85,7 @@
+                     android:layout_marginEnd="@dimen/call_log_icon_margin"
+                     android:textColor="?attr/call_log_primary_text_color"
+                     android:textSize="@dimen/call_log_primary_text_size"
+-                    android:singleLine="true"
++                    android:singleLine="false"
+                     />
+                 <TextView
+                     android:id="@+id/voicemail_transcription"
+diff --git a/res/layout/call_stats_detail.xml b/res/layout/call_stats_detail.xml
+index d785dc1..ca64cf6 100644
+--- a/res/layout/call_stats_detail.xml
++++ b/res/layout/call_stats_detail.xml
+@@ -63,7 +63,7 @@
+                 android:textSize="@dimen/call_log_primary_text_size"
+                 android:includeFontPadding="false"
+                 android:layout_marginBottom="5dp"
+-                android:singleLine="true"
++                android:singleLine="false"
+                 />
+             <TextView
+                 android:id="@+id/caller_number"
+diff --git a/res/layout/call_stats_list_item.xml b/res/layout/call_stats_list_item.xml
+index 152e585..74ffcd9 100644
+--- a/res/layout/call_stats_list_item.xml
++++ b/res/layout/call_stats_list_item.xml
+@@ -40,7 +40,7 @@
+         android:layout_height="wrap_content"
+         android:layout_toEndOf="@id/quick_contact_photo"
+         android:ellipsize="marquee"
+-        android:singleLine="true"
++        android:singleLine="false"
+         android:textColor="?attr/call_log_primary_text_color"
+         android:textSize="@dimen/call_log_primary_text_size" />
+ 
+diff --git a/res/layout/dialer_preferences.xml b/res/layout/dialer_preferences.xml
+index 023b122..34247d4 100644
+--- a/res/layout/dialer_preferences.xml
++++ b/res/layout/dialer_preferences.xml
+@@ -57,4 +57,4 @@
+ 
+     </RelativeLayout>
+ 
+-</LinearLayout>
+\ No newline at end of file
++</LinearLayout>
+diff --git a/res/layout/phone_favorite_tile_view.xml b/res/layout/phone_favorite_tile_view.xml
+index f274a9d..963f8c9 100644
+--- a/res/layout/phone_favorite_tile_view.xml
++++ b/res/layout/phone_favorite_tile_view.xml
+@@ -69,7 +69,7 @@
+                         android:layout_height="wrap_content"
+                         android:textColor="@color/contact_tile_name_color"
+                         android:fontFamily="sans-serif-medium"
+-                        android:singleLine="true"
++                        android:singleLine="false"
+                         android:textSize="15sp"
+                         android:fadingEdge="horizontal"
+                         android:fadingEdgeLength="3dip"

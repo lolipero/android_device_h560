@@ -1,0 +1,179 @@
+diff --git a/res/layout/contact_tile_frequent.xml b/res/layout/contact_tile_frequent.xml
+index 8c718fb..dcd11f7 100644
+--- a/res/layout/contact_tile_frequent.xml
++++ b/res/layout/contact_tile_frequent.xml
+@@ -40,7 +40,7 @@
+             android:layout_height="wrap_content"
+             android:textColor="@color/frequent_contact_text_color"
+             android:textSize="@dimen/contact_browser_list_item_text_size"
+-            android:singleLine="true"
++            android:singleLine="false"
+             android:fadingEdge="horizontal"
+             android:fadingEdgeLength="3dip"
+             android:ellipsize="marquee"
+diff --git a/res/layout/contact_tile_frequent_phone.xml b/res/layout/contact_tile_frequent_phone.xml
+index f87dff7..a5cac18 100644
+--- a/res/layout/contact_tile_frequent_phone.xml
++++ b/res/layout/contact_tile_frequent_phone.xml
+@@ -47,7 +47,7 @@
+             android:layout_marginTop="8dip"
+             android:layout_toRightOf="@id/contact_tile_quick"
+             android:layout_toEndOf="@id/contact_tile_quick"
+-            android:singleLine="true"
++            android:singleLine="false"
+             android:fadingEdge="horizontal"
+             android:fadingEdgeLength="3dip"
+             android:ellipsize="marquee"
+diff --git a/res/layout/contact_tile_starred.xml b/res/layout/contact_tile_starred.xml
+index 88aa1e8..31cba75 100644
+--- a/res/layout/contact_tile_starred.xml
++++ b/res/layout/contact_tile_starred.xml
+@@ -45,7 +45,7 @@
+             android:paddingTop="7dp"
+             android:textColor="@color/contact_tile_text_color"
+             android:textSize="@dimen/contact_browser_list_item_text_size"
+-            android:singleLine="true"
++            android:singleLine="false"
+             android:fadingEdge="horizontal"
+             android:fadingEdgeLength="3dip"
+             android:ellipsize="marquee"
+diff --git a/res/layout/contact_tile_starred_quick_contact.xml b/res/layout/contact_tile_starred_quick_contact.xml
+index ecbe583..fbc2574 100644
+--- a/res/layout/contact_tile_starred_quick_contact.xml
++++ b/res/layout/contact_tile_starred_quick_contact.xml
+@@ -49,7 +49,7 @@
+                 android:layout_height="wrap_content"
+                 android:textColor="@android:color/white"
+                 android:textSize="16sp"
+-                android:singleLine="true"
++                android:singleLine="false"
+                 android:fadingEdge="horizontal"
+                 android:fadingEdgeLength="3dip"
+                 android:ellipsize="marquee"
+diff --git a/src/com/android/contacts/common/list/ContactListItemView.java b/src/com/android/contacts/common/list/ContactListItemView.java
+index dd869b0..ec01414 100755
+--- a/src/com/android/contacts/common/list/ContactListItemView.java
++++ b/src/com/android/contacts/common/list/ContactListItemView.java
+@@ -991,7 +991,7 @@ public class ContactListItemView extends ViewGroup
+     public TextView getNameTextView() {
+         if (mNameTextView == null) {
+             mNameTextView = new TextView(getContext());
+-            mNameTextView.setSingleLine(true);
++            mNameTextView.setSingleLine(false);
+             mNameTextView.setEllipsize(getTextEllipsis());
+             mNameTextView.setTextColor(mNameTextViewTextColor);
+             mNameTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX,
+@@ -1002,7 +1002,7 @@ public class ContactListItemView extends ViewGroup
+             mNameTextView.setGravity(Gravity.CENTER_VERTICAL);
+             mNameTextView.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+             mNameTextView.setId(R.id.cliv_name_textview);
+-            mNameTextView.setElegantTextHeight(false);
++            mNameTextView.setElegantTextHeight(true);
+             addView(mNameTextView);
+         }
+         return mNameTextView;
+diff --git a/src/com/android/contacts/common/util/PickupGestureDetector.java b/src/com/android/contacts/common/util/PickupGestureDetector.java
+index 1595d2a..b478aa9 100644
+--- a/src/com/android/contacts/common/util/PickupGestureDetector.java
++++ b/src/com/android/contacts/common/util/PickupGestureDetector.java
+@@ -28,42 +28,28 @@ public class PickupGestureDetector implements SensorEventListener {
+     }
+ 
+     private boolean mEnabled;
+-    private int mYOrientation = 0;
+-    private int mProximityValue = 0;
++    private int mProximityValue = 1;
++    private int mMaxProximityValue = 1;
+     private boolean mProximityChanged = true;
+     private boolean mProximityInitialized = false;
+-    private float[] mGravity;
+-    private float[] mGeomagnetic;
+ 
+     private final SensorManager mSensorManager;
+     private final Sensor mProximitySensor;
+-    private final Sensor mAccelerometer;
+-    private final Sensor mMagneticSensor;
+     private final PickupListener mListener;
+-    private final float mMaxProximityValue;
+ 
+     public PickupGestureDetector(Context context, PickupListener listener) {
+         mSensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+-        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+-        mMagneticSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+         mProximitySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY);
+-        mMaxProximityValue = mProximitySensor != null ? mProximitySensor.getMaximumRange() : 0;
+         mEnabled = false;
+         mListener = listener;
+     }
+ 
+     public void enable() {
+-        if (!mEnabled && mProximitySensor != null
+-                && mAccelerometer != null && mMagneticSensor != null) {
++        if (!mEnabled && mProximitySensor != null) {
+             mSensorManager.registerListener(this, mProximitySensor,
+                     SensorManager.SENSOR_DELAY_NORMAL);
+-            mSensorManager.registerListener(this, mAccelerometer,
+-                    SensorManager.SENSOR_DELAY_NORMAL);
+-            mSensorManager.registerListener(this, mMagneticSensor,
+-                    SensorManager.SENSOR_DELAY_NORMAL);
+             mEnabled = true;
+-            mYOrientation = 0;
+-            mProximityValue = 0;
++            mProximityValue = 1;
+             mProximityChanged = true;
+             mProximityInitialized = false;
+         }
+@@ -72,8 +58,6 @@ public class PickupGestureDetector implements SensorEventListener {
+     public void disable() {
+         if (mEnabled) {
+             mSensorManager.unregisterListener(this, mProximitySensor);
+-            mSensorManager.unregisterListener(this, mAccelerometer);
+-            mSensorManager.unregisterListener(this, mMagneticSensor);
+             mEnabled = false;
+         }
+     }
+@@ -85,20 +69,13 @@ public class PickupGestureDetector implements SensorEventListener {
+             if (mProximityChanged) {
+                 mProximityValue = currentProx;
+                 mProximityChanged = false;
+-            } else if (mProximityValue > 0 && currentProx <= mMaxProximityValue) {
++            } else if (mProximityValue > 0 && currentProx == mMaxProximityValue) {
+                 mProximityInitialized = true;
+             }
+             mProximityValue = currentProx;
+-        } else if (event.sensor.equals(mAccelerometer)) {
+-            mGravity = event.values;
+-            recalcOrientation();
+-        } else if (event.sensor.equals(mMagneticSensor)) {
+-            mGeomagnetic = event.values;
+-            recalcOrientation();
+         }
+ 
+-        if (rightOrientation(mYOrientation) && mProximityValue <= mMaxProximityValue
+-                && mProximityInitialized) {
++        if (mProximityValue == 0 && mProximityInitialized) {
+             mListener.onPickup();
+         }
+     }
+@@ -107,21 +84,4 @@ public class PickupGestureDetector implements SensorEventListener {
+     public void onAccuracyChanged(Sensor sensor, int accuracy) {
+     }
+ 
+-    private void recalcOrientation() {
+-        if (mGravity == null || mGeomagnetic == null) {
+-            return;
+-        }
+-
+-        float R[] = new float[9];
+-        float I[] = new float[9];
+-        if (SensorManager.getRotationMatrix(R, I, mGravity, mGeomagnetic)) {
+-            float orientation[] = new float[5];
+-            SensorManager.getOrientation(R, orientation);
+-            mYOrientation = (int) (orientation[1] * 180f / Math.PI);
+-        }
+-    }
+-
+-    private boolean rightOrientation(int orientation) {
+-        return orientation > -130 && orientation < -50;
+-    }
+ }

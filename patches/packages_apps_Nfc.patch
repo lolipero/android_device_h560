@@ -1,0 +1,13 @@
+diff --git a/Android.mk b/Android.mk
+index 286b73f..ecf170b 100644
+--- a/Android.mk
++++ b/Android.mk
+@@ -13,7 +13,7 @@ LOCAL_SRC_FILES := \
+ LOCAL_SRC_FILES += \
+         $(call all-java-files-under, nxp)
+ 
+-LOCAL_PACKAGE_NAME := Nfc
++LOCAL_PACKAGE_NAME := NfcNxp
+ LOCAL_CERTIFICATE := platform
+ 
+ LOCAL_JNI_SHARED_LIBRARIES  := libnfc_jni

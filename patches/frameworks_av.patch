@@ -1,0 +1,338 @@
+diff --git a/include/media/AudioSystem.h b/include/media/AudioSystem.h
+index 698bf2e..606b015 100644
+--- a/include/media/AudioSystem.h
++++ b/include/media/AudioSystem.h
+@@ -332,6 +332,9 @@ public:
+ 
+     static status_t registerPolicyMixes(Vector<AudioMix> mixes, bool registration);
+ 
++    static status_t getAudioData(int par, unsigned long size, char * buffer);
++    static status_t setAudioData(int par, unsigned long size, char * buffer);
++
+     // ----------------------------------------------------------------------------
+ 
+     class AudioPortCallback : public RefBase
+diff --git a/include/media/IAudioFlinger.h b/include/media/IAudioFlinger.h
+index 54be5f3..dc88930 100644
+--- a/include/media/IAudioFlinger.h
++++ b/include/media/IAudioFlinger.h
+@@ -258,6 +258,9 @@ public:
+ 
+     /* Get the HW synchronization source used for an audio session */
+     virtual audio_hw_sync_t getAudioHwSyncForSession(audio_session_t sessionId) = 0;
++
++    virtual status_t getAudioData(int par, unsigned long size, char * buffer) = 0;
++    virtual status_t setAudioData(int par, unsigned long size, char * buffer) = 0;
+ };
+ 
+ 
+diff --git a/include/media/MediaPlayerInterface.h b/include/media/MediaPlayerInterface.h
+index b95f949..4760ba2 100644
+--- a/include/media/MediaPlayerInterface.h
++++ b/include/media/MediaPlayerInterface.h
+@@ -54,6 +54,7 @@ enum player_type {
+     // argument to the 'test:' url in the setDataSource call.
+     TEST_PLAYER = 5,
+     DASH_PLAYER = 6,
++    FM_AUDIO_PLAYER=7,
+ };
+ 
+ 
+diff --git a/media/libmedia/AudioSystem.cpp b/media/libmedia/AudioSystem.cpp
+index 9cae21c..d7b28b1 100644
+--- a/media/libmedia/AudioSystem.cpp
++++ b/media/libmedia/AudioSystem.cpp
+@@ -999,4 +999,18 @@ void AudioSystem::AudioPolicyServiceClient::onAudioPatchListUpdate()
+     }
+ }
+ 
++status_t AudioSystem::getAudioData(int par, unsigned long size, char * buffer)
++{
++    const sp<IAudioFlinger>& af = AudioSystem::get_audio_flinger();
++    if (af == 0) return 0;
++    return af->getAudioData(par, size, buffer);
++}
++
++status_t AudioSystem::setAudioData(int par, unsigned long size, char * buffer)
++{
++    const sp<IAudioFlinger>& af = AudioSystem::get_audio_flinger();
++    if (af == 0) return 0;
++    return af->setAudioData(par, size, buffer);
++}
++
+ }; // namespace android
+diff --git a/media/libmedia/IAudioFlinger.cpp b/media/libmedia/IAudioFlinger.cpp
+index 3f76506..366f42c 100644
+--- a/media/libmedia/IAudioFlinger.cpp
++++ b/media/libmedia/IAudioFlinger.cpp
+@@ -85,6 +85,8 @@ enum {
+ #ifdef QCOM_DIRECTTRACK
+     CREATE_DIRECT_TRACK,
+ #endif
++    GET_AUDIO_DATA,
++    SET_AUDIO_DATA,
+ };
+ 
+ #define MAX_ITEMS_PER_LIST 1024
+@@ -944,6 +946,44 @@ public:
+         }
+         return (audio_hw_sync_t)reply.readInt32();
+     }
++
++    virtual status_t getAudioData(int par, unsigned long size, char * buffer)
++    {
++        ALOGV("getAudioData: %d, %d, %p", par, size, buffer);
++        if (buffer == NULL || size == 0) {
++            return BAD_VALUE;
++        }
++        Parcel data, reply;
++        data.writeInterfaceToken(IAudioFlinger::getInterfaceDescriptor());
++        data.writeInt32(par);
++        data.writeInt32(size);
++        data.write(buffer, size);
++        status_t status = remote()->transact(GET_AUDIO_DATA, data, &reply);
++        if (status != NO_ERROR ||
++                (status = (status_t)reply.readInt32()) != NO_ERROR) {
++            return status;
++        }
++        reply.read(buffer, size);
++        return status;
++    }
++
++    virtual status_t setAudioData(int par, unsigned long size, char * buffer)
++    {
++        ALOGV("setAudioData: %d, %d, %p", par, size, buffer);
++        if (buffer == NULL || size == 0) {
++            return BAD_VALUE;
++        }
++        Parcel data, reply;
++        data.writeInterfaceToken(IAudioFlinger::getInterfaceDescriptor());
++        data.writeInt32(par);
++        data.writeInt32(size);
++        data.write(buffer, size);
++        status_t status = remote()->transact(SET_AUDIO_DATA, data, &reply);
++        if (status == NO_ERROR) {
++            status = (status_t)reply.readInt32();
++        }
++        return status;
++    }
+ };
+ 
+ IMPLEMENT_META_INTERFACE(AudioFlinger, "android.media.IAudioFlinger");
+@@ -1465,6 +1505,42 @@ status_t BnAudioFlinger::onTransact(
+             reply->writeInt32(getAudioHwSyncForSession((audio_session_t)data.readInt32()));
+             return NO_ERROR;
+         } break;
++        case GET_AUDIO_DATA: {
++            CHECK_INTERFACE(IAudioFlinger, data, reply);
++            int par = data.readInt32();
++            unsigned long size = data.readInt32();
++            ALOGV("GET_AUDIO_DATA: %d, %d", par, size);
++            char * buffer = (char*)calloc(size, 1);
++            if (buffer == NULL) {
++                reply->writeInt32(NO_MEMORY);
++                reply->writeInt32(0);
++                return NO_ERROR;
++            }
++            status_t status = getAudioData(par, size, buffer);
++            reply->writeInt32(status);
++            if (status == NO_ERROR) {
++                reply->write(buffer, size);
++            }
++            free(buffer);
++            return NO_ERROR;
++        } break;
++        case SET_AUDIO_DATA: {
++            CHECK_INTERFACE(IAudioFlinger, data, reply);
++            int par = data.readInt32();
++            unsigned long size = data.readInt32();
++            ALOGV("SET_AUDIO_DATA: %d, %d", par, size);
++            char * buffer = (char*)calloc(size, 1);
++            if (buffer == NULL) {
++                reply->writeInt32(NO_MEMORY);
++                reply->writeInt32(0);
++                return NO_ERROR;
++            }
++            data.read(buffer, size);
++            status_t status = setAudioData(par, size, buffer);
++            reply->writeInt32(status);
++            free(buffer);
++            return NO_ERROR;
++        } break;
+         default:
+             return BBinder::onTransact(code, data, reply, flags);
+     }
+diff --git a/media/libmediaplayerservice/Android.mk b/media/libmediaplayerservice/Android.mk
+index 8f06c55..b6d5ba4 100644
+--- a/media/libmediaplayerservice/Android.mk
++++ b/media/libmediaplayerservice/Android.mk
+@@ -43,6 +43,7 @@ LOCAL_SHARED_LIBRARIES :=       \
+     libutils                    \
+     libvorbisidec               \
+     libdrmframework             \
++    libmtkplayer
+ 
+ LOCAL_STATIC_LIBRARIES :=       \
+     libstagefright_nuplayer     \
+@@ -55,6 +56,7 @@ LOCAL_C_INCLUDES :=                                                 \
+     $(TOP)/frameworks/av/media/libstagefright/webm                  \
+     $(TOP)/frameworks/native/include/media/openmax                  \
+     $(TOP)/external/tremolo/Tremolo                                 \
++    $(TOP)/device/jiayu/s3_h560/mtk/libmtkplayer
+ 
+ LOCAL_MODULE:= libmediaplayerservice
+ 
+diff --git a/media/libmediaplayerservice/MediaPlayerFactory.cpp b/media/libmediaplayerservice/MediaPlayerFactory.cpp
+index 03fae91..d20774d 100644
+--- a/media/libmediaplayerservice/MediaPlayerFactory.cpp
++++ b/media/libmediaplayerservice/MediaPlayerFactory.cpp
+@@ -1,4 +1,7 @@
+ /*
++** Copyright (C) 2014 MediaTek Inc.
++** Modification based on code covered by the mentioned copyright
++** and/or permission notice(s).
+ **
+ ** Copyright 2012, The Android Open Source Project
+ **
+@@ -33,6 +36,7 @@
+ #include "TestPlayerStub.h"
+ #include "StagefrightPlayer.h"
+ #include "nuplayer/NuPlayerDriver.h"
++#include "FMAudioPlayer.h"
+ #include <dlfcn.h>
+ 
+ namespace android {
+@@ -388,6 +392,22 @@ class TestPlayerFactory : public MediaPlayerFactory::IFactory {
+     }
+ };
+ 
++class FMPlayerFactory : public MediaPlayerFactory::IFactory {
++  public:
++    virtual float scoreFactory(const sp<IMediaPlayer>& client,
++                               const char* url,
++                               float curScore) {
++        if(strncmp(url, "THIRDPARTY://MEDIAPLAYER_PLAYERTYPE_FM", 38) == 0)
++           return 1.0;
++        return 0.0;
++    }
++
++    virtual sp<MediaPlayerBase> createPlayer() {
++        return new FMAudioPlayer();
++        return NULL;
++    }
++};
++
+ void MediaPlayerFactory::registerBuiltinFactories() {
+     Mutex::Autolock lock_(&sLock);
+ 
+@@ -398,6 +418,7 @@ void MediaPlayerFactory::registerBuiltinFactories() {
+     registerFactory_l(new NuPlayerFactory(), NU_PLAYER);
+     registerFactory_l(new SonivoxPlayerFactory(), SONIVOX_PLAYER);
+     registerFactory_l(new TestPlayerFactory(), TEST_PLAYER);
++    registerFactory_l(new FMPlayerFactory(), FM_AUDIO_PLAYER);
+ 
+     const char* FACTORY_LIB           = "libdashplayer.so";
+     const char* FACTORY_CREATE_FN     = "CreateDASHFactory";
+diff --git a/services/audioflinger/AudioFlinger.cpp b/services/audioflinger/AudioFlinger.cpp
+index 0c9b646..3e7b73a 100644
+--- a/services/audioflinger/AudioFlinger.cpp
++++ b/services/audioflinger/AudioFlinger.cpp
+@@ -1,4 +1,8 @@
+ /*
++** Copyright (C) 2014 MediaTek Inc.
++** Modification based on code covered by the mentioned copyright
++** and/or permission notice(s).
++**
+ ** Copyright (c) 2011-2013, The Linux Foundation. All rights reserved.
+ ** Not a Contribution.
+ ** Copyright 2007, The Android Open Source Project
+@@ -1151,6 +1155,19 @@ status_t AudioFlinger::setStreamVolume(audio_stream_type_t stream, float value,
+         thread->setStreamVolume(stream, value);
+     }
+ 
++    // change by hochi for fm volume
++    if(stream == AUDIO_STREAM_MUSIC)
++    {
++        sp<ThreadBase> thread;
++        thread = checkPlaybackThread_l(output);
++        if (thread == primaryPlaybackThread_l())
++        {
++            //MTK_ALOG_D("setStreamVolume FM  value = %f",value);
++            audio_hw_device_t *dev = mPrimaryHardwareDev->hwDevice();
++            dev->set_parameters (dev,String8::format("SetFmVolume=%f",value));
++        }
++    }
++
+     return NO_ERROR;
+ }
+ 
+@@ -1165,6 +1182,12 @@ status_t AudioFlinger::setStreamMute(audio_stream_type_t stream, bool muted)
+     if (status != NO_ERROR) {
+         return status;
+     }
++    if(stream == AUDIO_STREAM_MUSIC)
++    {
++        //MTK_ALOG_D("setStreamMute MATV muted=%d",muted);
++        audio_hw_device_t *dev = mPrimaryHardwareDev->hwDevice();
++        dev->set_parameters (dev,String8::format("SetMatvMute=%d",muted));
++    }
+     ALOG_ASSERT(stream != AUDIO_STREAM_PATCH, "attempt to mute AUDIO_STREAM_PATCH");
+ 
+     if (uint32_t(stream) == AUDIO_STREAM_ENFORCED_AUDIBLE) {
+@@ -3334,6 +3357,42 @@ void AudioFlinger::dumpTee(int fd, const sp<NBAIO_Source>& source, audio_io_hand
+ }
+ #endif
+ 
++status_t AudioFlinger::getAudioData(int par, unsigned long size, char * buffer)
++{
++    status_t result = BAD_VALUE;
++    ALOGV("getAudioData: par=%d, size=%d, buffer=%p", par, size, buffer);
++    Mutex::Autolock _l(mLock);
++    if (mPrimaryHardwareDev != NULL) {
++        audio_hw_device_t *dev = mPrimaryHardwareDev->hwDevice();
++        if (dev != NULL && dev->get_audio_data != NULL) {
++            result = dev->get_audio_data(dev, par, size, buffer);
++        } else {
++            ALOGE("getAudioData: dev or get_audio_data is NULL");
++        }
++    } else {
++        ALOGE("getAudioData: mPrimaryHardwareDev is NULL");
++    }
++    return result;
++}
++
++status_t AudioFlinger::setAudioData(int par, unsigned long size, char * buffer)
++{
++    status_t result = BAD_VALUE;
++    ALOGV("setAudioData: par=%d, size=%d, buffer=%p", par, size, buffer);
++    Mutex::Autolock _l(mLock);
++    if (mPrimaryHardwareDev != NULL) {
++        audio_hw_device_t *dev = mPrimaryHardwareDev->hwDevice();
++        if (dev != NULL && dev->set_audio_data != NULL) {
++            result = dev->set_audio_data(dev, par, size, buffer);
++        } else {
++            ALOGE("setAudioData: dev or get_audio_data is NULL");
++        }
++    } else {
++        ALOGE("setAudioData: mPrimaryHardwareDev is NULL");
++    }
++    return result;
++}
++
+ status_t AudioFlinger::onTransact(
+         uint32_t code, const Parcel& data, Parcel* reply, uint32_t flags)
+ {
+diff --git a/services/audioflinger/AudioFlinger.h b/services/audioflinger/AudioFlinger.h
+index 60eed29..4067df8 100644
+--- a/services/audioflinger/AudioFlinger.h
++++ b/services/audioflinger/AudioFlinger.h
+@@ -295,6 +295,9 @@ public:
+     /* Get the HW synchronization source used for an audio session */
+     virtual audio_hw_sync_t getAudioHwSyncForSession(audio_session_t sessionId);
+ 
++    virtual status_t getAudioData(int par, unsigned long size, char * buffer);
++    virtual status_t setAudioData(int par, unsigned long size, char * buffer);
++
+     virtual     status_t    onTransact(
+                                 uint32_t code,
+                                 const Parcel& data,

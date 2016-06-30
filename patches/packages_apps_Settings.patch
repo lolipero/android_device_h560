@@ -1,0 +1,297 @@
+diff --git a/res/values-ru/cm_strings.xml b/res/values-ru/cm_strings.xml
+index 58726d6..975910a 100644
+--- a/res/values-ru/cm_strings.xml
++++ b/res/values-ru/cm_strings.xml
+@@ -26,6 +26,8 @@
+   <string name="show_dev_on_cm">Настройки для разработчиков включены!</string>
+   <!-- [CHAR LIMIT=NONE] Device Info screen. Okay we get it, stop pressing, you already have it on -->
+   <string name="show_dev_already_cm">Не нужно, настройки для разработчиков уже включены.</string>
++  <!-- Launch Engineer mode -->
++  <string name="settings_engineermode_title">Инженерное меню</string>
+   <!-- Launch Dev Tools -->
+   <string name="development_tools_title">Инструменты разработки</string>
+   <!-- Setting checkbox title for root access -->
+@@ -161,6 +163,8 @@
+   <string name="button_wake_summary">Отключает управление плеером</string>
+   <string name="home_answer_call_title">Ответ на звонок</string>
+   <string name="home_answer_call_summary">Отвечать на звонок нажатием кнопки «Домой»</string>
++  <string name="volume_answer_call_title">Ответ на звонок</string>
++  <string name="volume_answer_call_summary">Отвечать на звонок нажатием кнопок громкости</string>
+   <!-- Key backlight -->
+   <string name="button_backlight_title">Подсветка</string>
+   <string name="button_backlight_enabled">Подсветка кнопок</string>
+@@ -1214,4 +1218,8 @@
+ <b>Всего коммитов:</b> <xliff:g id="total_commits">%2$s</xliff:g><br/><br/>
+ <b>Последнее обновление:</b> <xliff:g id="date">%3$s</xliff:g>]]></string>
+   <string name="quick_settings_reset_message">Сбросить настройки плиток?</string>
++
++  <!-- Show/hide su icon -->
++  <string name="show_su_icon_title">Показывать иконку Su</string>
++  <string name="show_su_icon_summary">Отображать иконку в статусбаре, когда активен Superuser</string>
+ </resources>
+diff --git a/res/values-uk/cm_strings.xml b/res/values-uk/cm_strings.xml
+index 23c7598..d59f95e 100644
+--- a/res/values-uk/cm_strings.xml
++++ b/res/values-uk/cm_strings.xml
+@@ -26,6 +26,8 @@
+   <string name="show_dev_on_cm">Ви увімкнули налаштування розробника!</string>
+   <!-- [CHAR LIMIT=NONE] Device Info screen. Okay we get it, stop pressing, you already have it on -->
+   <string name="show_dev_already_cm">Немає необхідності, ви вже увімкнули налаштування для розробників.</string>
++  <!-- Launch Engineer mode -->
++  <string name="settings_engineermode_title">Інженерне меню</string>
+   <!-- Launch Dev Tools -->
+   <string name="development_tools_title">Інструм. розробника</string>
+   <!-- Setting checkbox title for root access -->
+@@ -161,6 +163,8 @@
+   <string name="button_wake_summary">Вимикає керування плеєром</string>
+   <string name="home_answer_call_title">Відповісти</string>
+   <string name="home_answer_call_summary">Відповідати на дзвінок натисканням кнопки «Додому»</string>
++  <string name="volume_answer_call_title">Відповісти</string>
++  <string name="volume_answer_call_summary">Відповідати на дзвінок натисканням кнопок гучності</string>
+   <!-- Key backlight -->
+   <string name="button_backlight_title">Підсвічування</string>
+   <string name="button_backlight_enabled">Підсвічувати кнопки</string>
+@@ -1212,4 +1216,8 @@
+                  <b>Всього коммітів:</b> <xliff:g id="total_commits">%2$s</xliff:g><br/><br/>
+                  <b>Останнє оновлення:</b> <xliff:g id="date">%3$s</xliff:g>]]></string>
+   <string name="quick_settings_reset_message">Скинути налаштування плиток?</string>
++
++  <!-- Show/hide su icon -->
++  <string name="show_su_icon_title">Показувати іконку Su</string>
++  <string name="show_su_icon_summary">Відображати іконку в статусбарі, коли активний Superuser</string>
+ </resources>
+diff --git a/res/values/cm_strings.xml b/res/values/cm_strings.xml
+index d8480b0..9db4160 100644
+--- a/res/values/cm_strings.xml
++++ b/res/values/cm_strings.xml
+@@ -25,6 +25,9 @@
+     <!-- [CHAR LIMIT=NONE] Device Info screen. Okay we get it, stop pressing, you already have it on -->
+     <string name="show_dev_already_cm">No need, you have already enabled development settings.</string>
+ 
++    <!-- Launch Engineer mode -->
++    <string name="settings_engineermode_title">Engineer mode</string>
++
+     <!-- Launch Dev Tools -->
+     <string name="development_tools_title">Development tools</string>
+ 
+@@ -179,6 +182,10 @@
+     <string name="home_answer_call_title">Answer call</string>
+     <string name="home_answer_call_summary">Pressing the home button will answer the current incoming call</string>
+ 
++    <!-- The volume key answer -->
++    <string name="volume_answer_call_title">Answer call</string>
++    <string name="volume_answer_call_summary">Pressing the volume button will answer the current incoming call</string>
++
+     <!-- Key backlight -->
+     <string name="button_backlight_title">Backlight</string>
+     <string name="button_backlight_enabled">Illuminate buttons</string>
+@@ -1419,6 +1426,10 @@
+ 
+     <string name="quick_settings_reset_message">Reset quick settings tiles?</string>
+ 
++    <!-- Show/hide su icon -->
++    <string name="show_su_icon_title">Show Su icon</string>
++    <string name="show_su_icon_summary">Display an icon in status bar when Superuser is active</string>
++
+     <string name="hardware_version_title">Hardware version</string>
+     <string name="hardware_version_value" translatable="false"></string>
+ </resources>
+diff --git a/res/xml/button_settings.xml b/res/xml/button_settings.xml
+index 6acffc3..a20367a 100644
+--- a/res/xml/button_settings.xml
++++ b/res/xml/button_settings.xml
+@@ -250,6 +250,12 @@
+             android:summary="@string/button_wake_summary"
+             android:defaultValue="false" />
+ 
++        <SwitchPreference
++            android:key="volume_answer_call"
++            android:title="@string/volume_answer_call_title"
++            android:summary="@string/volume_answer_call_summary"
++            android:defaultValue="false" />
++
+         <com.android.settings.cyanogenmod.SystemSettingSwitchPreference
+             android:key="volbtn_music_controls"
+             android:title="@string/volbtn_music_controls_title"
+diff --git a/res/xml/development_prefs.xml b/res/xml/development_prefs.xml
+index d00087d..58869d1 100644
+--- a/res/xml/development_prefs.xml
++++ b/res/xml/development_prefs.xml
+@@ -18,6 +18,15 @@
+         android:title="@string/development_settings_title">
+ 
+     <PreferenceScreen
++            android:title="@string/settings_engineermode_title"
++            android:persistent="false">
++        <intent
++                android:action="android.intent.action.MAIN"
++                android:targetPackage="com.mediatek.engineermode"
++                android:targetClass="com.mediatek.engineermode.EngineerMode" />
++    </PreferenceScreen>
++
++    <PreferenceScreen
+             android:key="development_tools"
+             android:title="@string/development_tools_title"
+             android:persistent="false" >
+diff --git a/res/xml/device_info_settings.xml b/res/xml/device_info_settings.xml
+index a18d483..0e6e6ec 100644
+--- a/res/xml/device_info_settings.xml
++++ b/res/xml/device_info_settings.xml
+@@ -38,8 +38,8 @@
+                 android:title="@string/cmupdate_settings_title"
+                 android:summary="@string/system_update_settings_list_item_summary">
+             <intent android:action="android.intent.action.MAIN"
+-                    android:targetPackage="com.cyanogenmod.updater"
+-                    android:targetClass="com.cyanogenmod.updater.UpdatesSettings" />
++                    android:targetPackage="eu.chainfire.opendelta"
++                    android:targetClass="eu.chainfire.opendelta.MainActivity" />
+         </PreferenceScreen>
+ 
+         <!-- Advanced mode -->
+diff --git a/res/xml/status_bar_settings.xml b/res/xml/status_bar_settings.xml
+index d497606..e196fec 100644
+--- a/res/xml/status_bar_settings.xml
++++ b/res/xml/status_bar_settings.xml
+@@ -58,4 +58,10 @@
+         android:summary="@string/status_bar_notif_count_summary"
+         android:defaultValue="false" />
+ 
++    <com.android.settings.cyanogenmod.SystemSettingSwitchPreference
++        android:key="show_su_icon"
++        android:title="@string/show_su_icon_title"
++        android:summary="@string/show_su_icon_summary"
++        android:defaultValue="true" />
++
+ </PreferenceScreen>
+diff --git a/src/com/android/settings/ButtonSettings.java b/src/com/android/settings/ButtonSettings.java
+index 4743caa..0467a10 100644
+--- a/src/com/android/settings/ButtonSettings.java
++++ b/src/com/android/settings/ButtonSettings.java
+@@ -72,6 +72,7 @@ public class ButtonSettings extends SettingsPreferenceFragment implements
+     private static final String KEY_APP_SWITCH_PRESS = "hardware_keys_app_switch_press";
+     private static final String KEY_APP_SWITCH_LONG_PRESS = "hardware_keys_app_switch_long_press";
+     private static final String KEY_VOLUME_KEY_CURSOR_CONTROL = "volume_key_cursor_control";
++    private static final String KEY_VOLUME_ANSWER_CALL = "volume_answer_call";
+     private static final String KEY_SWAP_VOLUME_BUTTONS = "swap_volume_buttons";
+     private static final String DISABLE_NAV_KEYS = "disable_nav_keys";
+     private static final String KEY_NAVIGATION_BAR_LEFT = "navigation_bar_left";
+@@ -136,6 +137,7 @@ public class ButtonSettings extends SettingsPreferenceFragment implements
+     private ListPreference mNavigationRecentsLongPressAction;
+     private SwitchPreference mPowerEndCall;
+     private SwitchPreference mHomeAnswerCall;
++    private SwitchPreference mVolumeAnswerCall;
+ 
+     private PreferenceCategory mNavigationPreferencesCat;
+ 
+@@ -155,6 +157,9 @@ public class ButtonSettings extends SettingsPreferenceFragment implements
+         // Home button answers calls.
+         mHomeAnswerCall = (SwitchPreference) findPreference(KEY_HOME_ANSWER_CALL);
+ 
++        // Volume button answers calls.
++        mVolumeAnswerCall = (SwitchPreference) findPreference(KEY_VOLUME_ANSWER_CALL);
++
+         mHandler = new Handler();
+ 
+         // Force Navigation bar related options
+@@ -492,6 +497,16 @@ public class ButtonSettings extends SettingsPreferenceFragment implements
+             mHomeAnswerCall.setChecked(homeButtonAnswersCall);
+         }
+ 
++        // Volume button answers calls.
++        if (mVolumeAnswerCall != null) {
++            final int incallVolumeBehavior = Settings.Secure.getInt(getContentResolver(),
++                    Settings.Secure.RING_VOLUME_BUTTON_BEHAVIOR,
++                    Settings.Secure.RING_VOLUME_BUTTON_BEHAVIOR_DEFAULT);
++            final boolean volumeButtonAnswersCall =
++                (incallVolumeBehavior == Settings.Secure.RING_VOLUME_BUTTON_BEHAVIOR_ANSWER);
++            mVolumeAnswerCall.setChecked(volumeButtonAnswersCall);
++        }
++
+     }
+ 
+     private ListPreference initActionList(String key, int value) {
+@@ -744,11 +759,21 @@ public class ButtonSettings extends SettingsPreferenceFragment implements
+         } else if (preference == mHomeAnswerCall) {
+             handleToggleHomeButtonAnswersCallPreferenceClick();
+             return true;
++        } else if (preference == mVolumeAnswerCall) {
++            handleToggleVolumeButtonAnswerCallPreferenceClick();
++            return true;
+         }
+ 
+         return super.onPreferenceTreeClick(preferenceScreen, preference);
+     }
+ 
++    private void handleToggleVolumeButtonAnswerCallPreferenceClick() {
++        Settings.Secure.putInt(getContentResolver(),
++                   Settings.Secure.RING_VOLUME_BUTTON_BEHAVIOR, (mVolumeAnswerCall.isChecked()
++                        ? Settings.Secure.RING_VOLUME_BUTTON_BEHAVIOR_ANSWER
++                        : Settings.Secure.RING_VOLUME_BUTTON_BEHAVIOR_DO_NOTHING));
++    }
++
+     private void handleTogglePowerButtonEndsCallPreferenceClick() {
+         Settings.Secure.putInt(getContentResolver(),
+                 Settings.Secure.INCALL_POWER_BUTTON_BEHAVIOR, (mPowerEndCall.isChecked()
+diff --git a/src/com/android/settings/sim/MultiSimEnablerPreference.java b/src/com/android/settings/sim/MultiSimEnablerPreference.java
+index a7fbf7d..eb0087a 100644
+--- a/src/com/android/settings/sim/MultiSimEnablerPreference.java
++++ b/src/com/android/settings/sim/MultiSimEnablerPreference.java
+@@ -42,6 +42,8 @@ import android.graphics.drawable.ShapeDrawable;
+ import android.graphics.drawable.shapes.OvalShape;
+ import android.os.Handler;
+ import android.os.Message;
++import android.os.RemoteException;
++import android.os.ServiceManager;
+ import android.preference.Preference;
+ import android.preference.SwitchPreference;
+ import android.provider.Settings;
+@@ -64,6 +66,7 @@ import android.widget.Toast;
+ 
+ import com.android.internal.telephony.SubscriptionController;
+ import com.android.internal.telephony.TelephonyIntents;
++import com.android.internal.telephony.ITelephony;
+ import com.android.settings.R;
+ import com.android.settings.Utils;
+ 
+@@ -99,6 +102,7 @@ public class MultiSimEnablerPreference extends SwitchPreference implements
+     private boolean mExplicitlyDisabled = false;
+ 
+     private SubscriptionManager mSubscriptionManager;
++    private ITelephony mITelephony;
+ 
+     private int[] mTintArr;
+     private String[] mColorStrings;
+@@ -115,6 +119,7 @@ public class MultiSimEnablerPreference extends SwitchPreference implements
+         mTintArr = context.getResources().getIntArray(com.android.internal.R.array.sim_colors);
+         mColorStrings = context.getResources().getStringArray(R.array.color_picker);
+         mTintSelectorPos = 0;
++        mITelephony = ITelephony.Stub.asInterface(ServiceManager.getService(Context.TELEPHONY_SERVICE));
+ 
+         setOnPreferenceChangeListener(this);
+         setPersistent(false);
+@@ -354,6 +359,17 @@ public class MultiSimEnablerPreference extends SwitchPreference implements
+         Toast.makeText(getContext(), textResId, Toast.LENGTH_LONG).show();
+     }
+ 
++    private void setRadioStateForSpecificSIM(boolean checked, int subscriberID) {
++        if(subscriberID != SubscriptionManager.INVALID_SUBSCRIPTION_ID) {
++                try {
++                        mITelephony.setRadioForSubscriber(subscriberID, checked);
++                }
++                catch (RemoteException re) {
++                        re.printStackTrace();
++                }
++        }
++    }
++
+     private void sendSubConfigurationRequest(boolean enable) {
+         if (mParentHandler == null) {
+             return;
+@@ -361,6 +377,7 @@ public class MultiSimEnablerPreference extends SwitchPreference implements
+         mTargetState = enable;
+ 
+         showProgressDialog(enable);
++        setRadioStateForSpecificSIM(enable, mSir.getSubscriptionId());
+         if (enable) {
+             SubscriptionManager.activateSubId(mSir.getSubscriptionId());
+	} else {

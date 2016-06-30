@@ -1,0 +1,44 @@
+diff --git a/res/layout/primary_call_info.xml b/res/layout/primary_call_info.xml
+index 71369d4..a060c58 100644
+--- a/res/layout/primary_call_info.xml
++++ b/res/layout/primary_call_info.xml
+@@ -81,11 +81,12 @@
+         android:layout_width="match_parent"
+         android:layout_height="wrap_content"
+         android:layout_marginTop="-5dp"
++        android:maxWidth="250.0dip"
+         android:fontFamily="sans-serif-light"
+         android:textAlignment="viewStart"
+         android:textAppearance="?android:attr/textAppearanceLarge"
+         android:textSize="@dimen/call_name_text_size"
+-        android:singleLine="true"
++        android:singleLine="false"
+         ex:resizing_text_min_size="@dimen/call_name_text_min_size" />
+ 
+ 
+diff --git a/res/values/colors.xml b/res/values/colors.xml
+index afc557b..a2e89a1 100644
+--- a/res/values/colors.xml
++++ b/res/values/colors.xml
+@@ -63,7 +63,7 @@
+     <color name="translucent_shadow">#33999999</color>
+ 
+     <!-- 70% opacity, black. -->
+-    <color name="glowpad_background_color">#b3000000</color>
++    <color name="glowpad_background_color">#00000000</color>
+     <!-- 15% opacity, white. -->
+     <color name="glowpad_outer_ring_color">#26ffffff</color>
+     <color name="glowpad_text_widget_ring_color">#ffffff</color>
+diff --git a/src/com/android/incallui/ProximitySensor.java b/src/com/android/incallui/ProximitySensor.java
+index ed3dfee..90b195a 100644
+--- a/src/com/android/incallui/ProximitySensor.java
++++ b/src/com/android/incallui/ProximitySensor.java
+@@ -218,7 +218,7 @@ public class ProximitySensor implements AccelerometerListener.ChangeListener,
+                     .add("aud", AudioState.audioRouteToString(audioMode))
+                     .toString());
+ 
+-            if (mIsPhoneOffhook && !screenOnImmediately) {
++            if (/*mIsPhoneOffhook && */!screenOnImmediately) {
+                 Log.d(this, "Turning on proximity sensor");
+                 // Phone is in use!  Arrange for the screen to turn off
+                 // automatically when the sensor detects a close object.
