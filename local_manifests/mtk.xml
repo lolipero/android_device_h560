@@ -21,18 +21,18 @@
     <copyfile src="core/root.mk" dest="Makefile" />
   </project> -->
 
-  <project path="system/core" name="xen0n/android_system_core_mtk" groups="pdk" />
-  <project path="system/netd" name="xen0n/android_system_netd_mtk" groups="pdk" />
-  <!-- <project path="system/vold" name="xen0n/android_system_vold_mtk" groups="pdk" /> -->
-  <!-- <project path="external/tinycompress" name="xen0n/android_external_tinycompress_mtk" groups="pdk" /> -->
-  <project path="frameworks/av" name="xen0n/android_frameworks_av_mtk" groups="pdk" />
-  <project path="frameworks/base" name="xen0n/android_frameworks_base_mtk" />
-  <!--   <project path="frameworks/native" name="xen0n/android_frameworks_native_mtk" groups="pdk" /> -->
-  <project path="frameworks/opt/telephony" name="xen0n/android_frameworks_opt_telephony_mtk" />
-  <project path="hardware/libhardware" name="xen0n/android_hardware_libhardware_mtk" groups="pdk" />
-  <!-- <project path="hardware/libhardware_legacy" name="xen0n/android_hardware_libhardware_legacy_mtk" groups="pdk" /> -->
-  <project path="packages/services/Telecomm" name="xen0n/android_packages_services_Telecomm_mtk" />
-  <project path="packages/services/Telephony" name="xen0n/android_packages_services_Telephony_mtk" />
+  <project path="system/core" name="xen0n/android_system_core_mtk" groups="pdk" revision="cm-12.1" />
+  <project path="system/netd" name="xen0n/android_system_netd_mtk" groups="pdk" revision="cm-12.1" />
+  <!-- <project path="system/vold" name="xen0n/android_system_vold_mtk" groups="pdk" revision="cm-12.1" /> -->
+  <!-- <project path="external/tinycompress" name="xen0n/android_external_tinycompress_mtk" groups="pdk" revision="cm-12.1" /> -->
+  <project path="frameworks/av" name="xen0n/android_frameworks_av_mtk" groups="pdk" revision="cm-12.1" />
+  <project path="frameworks/base" name="xen0n/android_frameworks_base_mtk" revision="cm-12.1" />
+  <!--   <project path="frameworks/native" name="xen0n/android_frameworks_native_mtk" groups="pdk" revision="cm-12.1" /> -->
+  <project path="frameworks/opt/telephony" name="xen0n/android_frameworks_opt_telephony_mtk" revision="cm-12.1" />
+  <project path="hardware/libhardware" name="xen0n/android_hardware_libhardware_mtk" groups="pdk" revision="cm-12.1" />
+  <!-- <project path="hardware/libhardware_legacy" name="xen0n/android_hardware_libhardware_legacy_mtk" groups="pdk" revision="cm-12.1" /> -->
+  <project path="packages/services/Telecomm" name="xen0n/android_packages_services_Telecomm_mtk" revision="cm-12.1" />
+  <project path="packages/services/Telephony" name="xen0n/android_packages_services_Telephony_mtk" revision="cm-12.1" />
   <!-- <project path="packages/apps/Snap" name="CyanogenMod/android_packages_apps_Snap" /> -->
   <!-- <project path="packages/apps/FMRadio" name="CyanogenMod/android_packages_apps_FMRadio" /> -->
   <!-- vim:set ai et ts=2 sw=2 sts=2 fenc=utf-8: -->
